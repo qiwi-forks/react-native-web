@@ -159,7 +159,11 @@ function getOrderedGroups(obj: { [key: number]: any }) {
 
 const pattern = /\s*([,])\s*/g;
 function getSelectorText(cssText) {
-  const selector = cssText.split('{')[0].trim();
+  const selector = cssText
+    .split('{')
+    .slice(0, cssText.startsWith('@media') ? 2 : 1)
+    .join(' ')
+    .trim();
   return selector !== '' ? selector.replace(pattern, '$1') : null;
 }
 

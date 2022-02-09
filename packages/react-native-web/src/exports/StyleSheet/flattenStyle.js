@@ -35,10 +35,31 @@ function flattenStyle(style: ?any): ?Object {
   for (let i = 0, styleLength = style.length; i < styleLength; ++i) {
     const computedStyle = flattenStyle(style[i]);
     if (computedStyle) {
-      for (const key in computedStyle) {
-        const value = computedStyle[key];
-        result[key] = value;
-      }
+      Object.keys(computedStyle)
+        .sort()
+        .reverse()
+        .forEach((key) => {
+          const value = computedStyle[key];
+          if (key.startsWith('@media')) {
+            const mediaComputedStyle = flattenStyle(value);
+            if (mediaComputedStyle) {
+              for (const mediaKey in mediaComputedStyle) {
+                if (result[mediaKey] == null) {
+                  result[mediaKey] = {};
+                }
+                if (
+                  result[mediaKey] != null &&
+                  !(typeof result[mediaKey] === 'object' && !Array.isArray(result[mediaKey]))
+                ) {
+                  result[mediaKey] = { '': result[mediaKey] };
+                }
+                result[mediaKey][key] = mediaComputedStyle[mediaKey];
+              }
+            }
+          } else {
+            result[key] = value;
+          }
+        });
     }
   }
   return result;

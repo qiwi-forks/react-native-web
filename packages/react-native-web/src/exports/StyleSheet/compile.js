@@ -58,11 +58,22 @@ export function atomic(style: Style): CompilerOutput {
           const { identifier } = cachedResult;
           acc[identifier] = cachedResult;
         } else {
-          const identifier = createIdentifier('r', property, value);
-          const rules = createAtomicRules(identifier, property, value);
+          const identifier = createIdentifier('r', property, valueString);
+          const rules =
+            typeof value === 'object' && !Array.isArray(value)
+              ? Object.keys(value).reduce(
+                  (rules, media) =>
+                    rules.concat(
+                      createAtomicRules(identifier, property, value[media]).map(
+                        (rule) => `${media ? `${media}{` : ''}${rule}${media ? '}' : ''}`
+                      )
+                    ),
+                  []
+                )
+              : createAtomicRules(identifier, property, value);
           const cachedResult = cache.set(property, valueString, {
             property,
-            value: stringifyValueWithProperty(value, property),
+            value: valueString,
             identifier,
             rules
           });
@@ -78,7 +89,7 @@ export function atomic(style: Style): CompilerOutput {
  * No support for 'placeholderTextColor', 'scrollbarWidth', or 'pointerEvents'.
  */
 export function classic(style: Style, name: string): CompilerOutput {
-  const identifier = createIdentifier('css', name, style);
+  const identifier = createIdentifier('css', name, JSON.stringify(style));
   const { animationKeyframes, ...rest } = style;
 
   const rules = [];
@@ -109,7 +120,14 @@ export function inline(style: Style): Object {
  */
 export function stringifyValueWithProperty(value: Value, property: ?string): string {
   // e.g., 0 => '0px', 'black' => 'rgba(0,0,0,1)'
-  const normalizedValue = normalizeValueWithProperty(value, property);
+  const normalizedValue =
+    value != null && typeof value === 'object' && !Array.isArray(value)
+      ? Object.keys(value).reduce(
+          (acc, key) =>
+            Object.assign(acc, { [key]: normalizeValueWithProperty(value[key], property) }),
+          {}
+        )
+      : normalizeValueWithProperty(value, property);
   return typeof normalizedValue !== 'string'
     ? JSON.stringify(normalizedValue || '')
     : normalizedValue;
@@ -218,8 +236,8 @@ function createDeclarationBlock(style: Style) {
 /**
  * An identifier is associated with a unique set of styles.
  */
-function createIdentifier(prefix: string, name: string, value): string {
-  const hashedString = hash(name + stringifyValueWithProperty(value, name));
+function createIdentifier(prefix: string, name: string, value: string): string {
+  const hashedString = hash(name + value);
   return process.env.NODE_ENV !== 'production'
     ? `${prefix}-${name}-${hashedString}`
     : `${prefix}-${hashedString}`;
@@ -230,7 +248,7 @@ function createIdentifier(prefix: string, name: string, value): string {
  */
 function createKeyframes(keyframes) {
   const prefixes = ['-webkit-', ''];
-  const identifier = createIdentifier('r', 'animation', keyframes);
+  const identifier = createIdentifier('r', 'animation', JSON.stringify(keyframes));
 
   const steps =
     '{' +

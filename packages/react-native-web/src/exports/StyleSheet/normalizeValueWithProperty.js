@@ -27,7 +27,11 @@ export default function normalizeValueWithProperty(value: any, property?: ?strin
   let returnValue = value;
   if ((property == null || !unitlessNumbers[property]) && typeof value === 'number') {
     returnValue = `${value}px`;
-  } else if (property != null && colorProps[property]) {
+  } else if (
+    property != null &&
+    colorProps[property] &&
+    (typeof value === 'number' || typeof value === 'string')
+  ) {
     returnValue = normalizeColor(value);
   }
   return returnValue;

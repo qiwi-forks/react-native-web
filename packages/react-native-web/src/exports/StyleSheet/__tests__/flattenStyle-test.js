@@ -36,4 +36,15 @@ describe('StyleSheet/flattenStyle', () => {
     const style = flattenStyle([null, [], [{ order: 2 }, { opacity: 1 }], { order: 3 }]);
     expect(style).toMatchSnapshot();
   });
+
+  test('should flatten media queries', () => {
+    const style = flattenStyle([
+      null,
+      [],
+      [{ width: 100 }],
+      [{ backgroundColor: '#000', '@media screen': { backgroundColor: '#FFF' } }],
+      [{ '@media screen': { height: 100 } }]
+    ]);
+    expect(style).toMatchSnapshot();
+  });
 });
